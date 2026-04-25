@@ -4,6 +4,7 @@ import Hero from './components/Hero'
 import Skills from './components/Skills'
 import Projects from './components/Projects'
 import Contact from './components/Contact'
+import About from './components/About'
 
 export const ThemeContext = createContext()
 export const ScrollContext = createContext()
@@ -43,6 +44,7 @@ function App() {
         <div className="app animate-glitch">
           <Navbar />
           <Hero />
+          <About />
           <Skills />
           <Projects />
           <Contact />

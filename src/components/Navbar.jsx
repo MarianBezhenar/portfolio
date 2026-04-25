@@ -3,7 +3,7 @@ import { FiSun, FiMoon } from 'react-icons/fi'
 import { ThemeContext } from '../App'
 
 const navLinks = [
-  { label: 'Skills', href: '#skills' },
+  { label: 'About', href: '#about' },
   { label: 'Projects', href: '#projects' },
   { label: 'Contact', href: '#contact' },
 ]
