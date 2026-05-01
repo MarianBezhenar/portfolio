@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 
-// Bold Particle Background - Stays visible throughout
+// Keep the Bold Particle Background logic
 function ParticleCanvas() {
   const canvasRef = useRef(null)
 
@@ -8,9 +10,8 @@ function ParticleCanvas() {
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
     let animId
-
     const particles = []
-    const particleCount = 90
+    const particleCount = 100
 
     const resize = () => {
       canvas.width = window.innerWidth
@@ -21,9 +22,9 @@ function ParticleCanvas() {
       constructor() {
         this.x = Math.random() * canvas.width
         this.y = Math.random() * canvas.height
-        this.vx = (Math.random() - 0.5) * 0.7
-        this.vy = (Math.random() - 0.5) * 0.7
-        this.radius = Math.random() * 2 + 0.5
+        this.vx = (Math.random() - 0.5) * 0.8
+        this.vy = (Math.random() - 0.5) * 0.8
+        this.radius = Math.random() * 2 + 1
       }
       update() {
         this.x += this.vx
@@ -34,7 +35,7 @@ function ParticleCanvas() {
       draw() {
         ctx.beginPath()
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2)
-        ctx.fillStyle = 'rgba(255, 122, 0, 0.6)'
+        ctx.fillStyle = 'rgba(255, 122, 0, 0.7)'
         ctx.fill()
       }
     }
@@ -50,10 +51,10 @@ function ParticleCanvas() {
           const dx = particles[i].x - particles[j].x
           const dy = particles[i].y - particles[j].y
           const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < 150) {
+          if (dist < 180) {
             ctx.beginPath()
-            ctx.strokeStyle = `rgba(255, 122, 0, ${0.3 - dist / 500})`
-            ctx.lineWidth = 1
+            ctx.strokeStyle = `rgba(255, 122, 0, ${0.4 - dist / 400})`
+            ctx.lineWidth = 1.2
             ctx.moveTo(particles[i].x, particles[i].y)
             ctx.lineTo(particles[j].x, particles[j].y)
             ctx.stroke()
@@ -81,138 +82,102 @@ function ParticleCanvas() {
   return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-0" />
 }
 
-function TypewriterText({ text, delay = 0 }) {
-  const [displayed, setDisplayed] = useState('')
-  const [started, setStarted] = useState(false)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setStarted(true), delay)
-    return () => clearTimeout(timer)
-  }, [delay])
-
-  useEffect(() => {
-    if (!started) return
-    let i = 0
-    const interval = setInterval(() => {
-      setDisplayed(text.slice(0, i + 1))
-      i++
-      if (i >= text.length) clearInterval(interval)
-    }, 55)
-    return () => clearInterval(interval)
-  }, [started, text])
-
-  return (
-    <span>
-      {displayed}
-      {displayed.length < text.length && (
-        <span className="inline-block w-0.5 h-5 bg-orange ml-0.5 align-middle animate-blink" />
-      )}
+const SplitText = ({ text, className }) => {
+  return text.split("").map((char, index) => (
+    <span key={index} className={`${className} inline-block opacity-0 translate-y-4`}>
+      {char === " " ? "\u00A0" : char}
     </span>
-  )
+  ))
 }
 
 export default function Hero() {
-  const [isIntro, setIsIntro] = useState(true)
+  const container = useRef()
 
-  useEffect(() => {
-    // Exact 3-second duration
-    const timer = setTimeout(() => setIsIntro(false), 2000)
-    return () => clearTimeout(timer)
-  }, [])
+  useGSAP(() => {
+    const tl = gsap.timeline()
+
+    tl.to(".char-marian, .char-bezhenar", {
+      opacity: 1,
+      y: 0,
+      duration: 0.1,
+      stagger: {
+        each: 0.05,
+        from: "random"
+      },
+      ease: "power2.out",
+    })
+    
+    tl.to(".char-marian, .char-bezhenar", {
+        color: (i, el) => el.classList.contains('char-marian') ? "currentColor" : "#ff7a00",
+        duration: 0.3,
+        stagger: 0.05
+    }, 0)
+
+    tl.from(".gsap-reveal", {
+      opacity: 0,
+      y: 20,
+      duration: 1,
+      stagger: 0.2,
+      ease: "expo.out"
+    }, "-=0.5")
+
+  }, { scope: container })
 
   return (
-    <section id="home" className="relative min-h-screen flex items-center px-12 overflow-hidden bg-black">
-      <style>{`
-        /* Quick 2-second Chaotic Flicker */
-        @keyframes fast-flicker {
-          0%, 20%, 40%, 60%, 80%, 100% { opacity: 1; }
-          10%, 30%, 50%, 70%, 90% { opacity: 0; }
-        }
-
-        /* Subtle Tearing (No background color) */
-        @keyframes fast-glitch {
-          0% { clip-path: inset(20% 0 50% 0); transform: translateX(-4px); }
-          25% { clip-path: inset(80% 0 1% 0); transform: translateX(4px); }
-          50% { clip-path: inset(40% 0 40% 0); transform: translateX(-8px); }
-          75% { clip-path: inset(10% 0 10% 0); transform: translateX(8px); }
-          100% { clip-path: inset(0 0 0 0); transform: translateX(0); }
-        }
-
-        .intro-flicker {
-          animation: fast-flicker 0.1s step-end infinite;
-        }
-
-        .intro-glitch {
-          position: relative;
-        }
-
-        .intro-glitch::before,
-        .intro-glitch::after {
-          content: attr(data-text);
-          position: absolute;
-          top: 0; left: 0; width: 100%; height: 100%;
-          opacity: 0.7;
-        }
-
-        .intro-glitch::before {
-          color: #ff00c1;
-          z-index: -1;
-          animation: fast-glitch 0.2s contrast(200%) infinite;
-        }
-
-        .intro-glitch::after {
-          color: #00fff9;
-          z-index: -2;
-          animation: fast-glitch 0.3s reverse infinite;
-        }
-      `}</style>
-
+    <section 
+      ref={container}
+      id="home" 
+      className="relative min-h-screen flex items-center px-6 md:px-12 overflow-hidden bg-black"
+    >
       <ParticleCanvas />
       
-      {/* Texture Overlay (Grain) */}
-      <div className="absolute inset-0 opacity-5 pointer-events-none z-1" 
-           style={{backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")'}} />
+      {/* Labels */}
+      <div className="gsap-reveal absolute top-12 md:top-24 left-6 md:left-12 flex items-center gap-4 font-mono text-[10px] md:text-xs tracking-widest text-gray-text uppercase z-10">
+        <span className="block w-6 md:w-10 h-px bg-gray-text" />
+        PORTFOLIO / 2026
+      </div>
 
-      {/* Main content */}
-      <div className="relative z-10 max-w-6xl mx-auto px-12">
-        <h1 className="font-display font-extrabold mb-10">
-          <span 
-            data-text="Marian"
-            className={`block text-9xl text-white tracking-tighter ${isIntro ? 'intro-flicker intro-glitch' : ''}`}
-          >
-            Marian
+      <div className="gsap-reveal absolute top-12 md:top-24 right-6 md:right-12 flex items-center gap-2 font-mono text-[10px] md:text-xs tracking-widest text-gray-text uppercase z-10">
+        <span className="w-1.5 h-1.5 rounded-full bg-orange shadow-lg" />
+        Available
+      </div>
+
+      <div className="relative z-10 w-full max-w-6xl mx-auto pt-20">
+        {/* Responsive Name Layout */}
+        <h1 className="font-display font-extrabold mb-10 select-none flex md:block gap-4">
+          {/* Column 1: MARIAN */}
+          <span className="flex flex-col md:block text-6xl sm:text-8xl md:text-9xl text-white tracking-tighter uppercase md:normal-case">
+            <SplitText text="Marian" className="char-marian" />
           </span>
-          <span 
-            data-text="Bezhenar."
-            className={`block text-9xl text-orange italic tracking-tighter ${isIntro ? 'intro-flicker intro-glitch' : ''}`}
-            style={isIntro ? { animationDelay: '0.05s' } : {}}
-          >
-            Bezhenar<span className="text-orange">.</span>
+          
+          {/* Column 2: BEZHENAR */}
+          <span className="flex flex-col md:block text-6xl sm:text-8xl md:text-9xl text-orange italic tracking-tighter uppercase md:normal-case">
+            <SplitText text="Bezhenar" className="char-bezhenar" />
           </span>
         </h1>
 
-        <div className="flex justify-end mb-14 animate-fadeUp" style={{animationDelay: '0.7s'}}>
+        <div className="gsap-reveal flex md:justify-end mb-14">
           <div className="max-w-96">
-            <p className="font-mono text-sm text-orange tracking-wider mb-3">
+            <p className="font-mono text-xs md:text-sm text-orange tracking-wider mb-3">
               // Java Backend Developer | Spring Boot
             </p>
-            <p className="font-mono text-sm text-gray-text leading-relaxed">
-              <TypewriterText text="I build scalable backend systems and REST APIs." delay={900} />
+            <p className="font-mono text-xs md:text-sm text-gray-text leading-relaxed">
+              I build scalable backend systems and REST APIs.
             </p>
           </div>
         </div>
 
-        <div className="flex gap-4 animate-fadeUp" style={{animationDelay: '1s'}}>
-          <a href="#projects" className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-orange text-black font-mono text-xs font-bold tracking-widest uppercase border border-orange hover:bg-transparent hover:text-orange transition-all duration-250">
+        <div className="gsap-reveal flex flex-col sm:flex-row gap-4">
+          <a href="#projects" className="text-center px-8 py-3.5 bg-orange text-black font-mono text-[10px] font-bold tracking-widest uppercase border border-orange hover:bg-transparent hover:text-orange transition-all duration-250">
             View Projects ↗
           </a>
-          <a href="#contact" className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-transparent text-white font-mono text-xs font-bold tracking-widest uppercase border border-gray-mid hover:border-orange hover:text-orange transition-all duration-250">
+          <a href="#contact" className="text-center px-8 py-3.5 bg-transparent text-white font-mono text-[10px] font-bold tracking-widest uppercase border border-gray-mid hover:border-orange hover:text-orange transition-all duration-250">
             Get in Touch ↓
           </a>
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-12 right-12 h-px z-10" style={{background: 'linear-gradient(to right, var(--orange), transparent)'}} />
+      <div className="absolute bottom-0 left-6 md:left-12 right-6 md:right-12 h-px z-10" style={{background: 'linear-gradient(to right, var(--orange), transparent)'}} />
     </section>
   )
 }
